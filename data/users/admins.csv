@@ -1,0 +1,7 @@
+username,email,name,department,default_password
+admin,admin@university.edu,System Administrator,IT,admin123
+principal,principal@university.edu,Dr. Margaret Principal,Administration,principal123
+registrar,registrar@university.edu,John Registrar,Administration,registrar123
+dean.cs,dean.cs@university.edu,Dr. Robert Dean,Computer Science,dean123
+dean.ise,dean.ise@university.edu,Dr. Sarah Dean,ISE,dean123
+head.it,head.it@university.edu,Michael IT Head,IT,ithead123

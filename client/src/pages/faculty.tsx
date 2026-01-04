@@ -1,21 +1,11 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import {
-  Plus,
-  Search,
-  Pencil,
-  Trash2,
-  Users,
-  Mail,
-  Building2,
-  Clock,
-  Loader2,
-} from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Users, Mail, Building2, Clock, Loader2, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -46,18 +36,42 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { AvailabilitySelector } from "@/components/AvailabilitySelector";
+import { SubjectSelector } from "@/components/SubjectSelector";
+import { RoomPreferenceSelector } from "@/components/RoomPreferenceSelector";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Label } from "@/components/ui/label";
 import type { Faculty } from "@shared/schema";
+import type { AvailabilityData } from "@shared/availability";
 
 const facultySchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   department: z.string().min(1, "Department is required"),
   maxHoursPerWeek: z.coerce.number().min(1).max(40),
+  preferredSubjects: z.array(z.string()).optional(),
+  availability: z.any().optional(),
+  preferences: z.object({
+    roomPreferences: z.array(z.any()).optional(),
+    timePreferences: z.array(z.any()).optional(),
+    subjectPreferences: z.array(z.any()).optional(),
+  }).optional(),
 });
 
 type FacultyFormValues = z.infer<typeof facultySchema>;
+
+const defaultAvailability: AvailabilityData = {
+  schedule: [],
+};
+
+const defaultPreferences = {
+  roomPreferences: [],
+  timePreferences: [],
+  subjectPreferences: [],
+};
 
 export default function FacultyPage() {
   const { toast } = useToast();
@@ -77,6 +91,9 @@ export default function FacultyPage() {
       email: "",
       department: "",
       maxHoursPerWeek: 20,
+      preferredSubjects: [],
+      availability: defaultAvailability,
+      preferences: defaultPreferences,
     },
   });
 
@@ -144,6 +161,12 @@ export default function FacultyPage() {
       email: faculty.email,
       department: faculty.department,
       maxHoursPerWeek: faculty.maxHoursPerWeek,
+      preferredSubjects: (faculty as any).preferredSubjects || [],
+      availability: (faculty.availability as AvailabilityData) || defaultAvailability,
+      // Handle case where preferences is an array (from API) instead of object
+      preferences: Array.isArray((faculty as any).preferences) 
+        ? defaultPreferences 
+        : ((faculty as any).preferences || defaultPreferences),
     });
     setIsDialogOpen(true);
   };
@@ -181,7 +204,7 @@ export default function FacultyPage() {
               Add Faculty
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-2xl max-h-[90vh]">
             <DialogHeader>
               <DialogTitle>
                 {editingFaculty ? "Edit Faculty" : "Add New Faculty"}
@@ -192,102 +215,169 @@ export default function FacultyPage() {
                   : "Add a new faculty member to the system"}
               </DialogDescription>
             </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Dr. John Smith"
-                          data-testid="input-faculty-name"
-                          {...field}
+            <ScrollArea className="max-h-[calc(90vh-180px)] pr-4">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  {/* Basic Information */}
+                  <div className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Full Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Dr. John Smith"
+                              data-testid="input-faculty-name"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="email"
+                              placeholder="john.smith@university.edu"
+                              data-testid="input-faculty-email"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="department"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Department</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Computer Science"
+                                data-testid="input-faculty-department"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="maxHoursPerWeek"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Max Hours/Week</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min={1}
+                                max={40}
+                                data-testid="input-faculty-hours"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Tabbed Sections */}
+                  <div className="pt-4 border-t">
+                    <Tabs defaultValue="subjects" className="w-full">
+                      <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="subjects">Subjects</TabsTrigger>
+                        <TabsTrigger value="availability">Availability</TabsTrigger>
+                        <TabsTrigger value="rooms">Room Prefs</TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="subjects" className="space-y-4">
+                        <Controller
+                          control={form.control}
+                          name="preferredSubjects"
+                          render={({ field, fieldState }) => (
+                            <SubjectSelector
+                              value={field.value || []}
+                              onChange={field.onChange}
+                              department={form.watch("department")}
+                              error={fieldState.error?.message}
+                            />
+                          )}
                         />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="email"
-                          placeholder="john.smith@university.edu"
-                          data-testid="input-faculty-email"
-                          {...field}
+                      </TabsContent>
+                      
+                      <TabsContent value="availability" className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <Label className="text-base font-medium">Availability Schedule</Label>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Select the days and time ranges when this faculty member is available to teach.
+                        </p>
+                        <Controller
+                          control={form.control}
+                          name="availability"
+                          render={({ field, fieldState }) => (
+                            <AvailabilitySelector
+                              value={field.value || defaultAvailability}
+                              onChange={field.onChange}
+                              error={fieldState.error?.message}
+                            />
+                          )}
                         />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="department"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Department</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Computer Science"
-                            data-testid="input-faculty-department"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="maxHoursPerWeek"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Max Hours/Week</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min={1}
-                            max={40}
-                            data-testid="input-faculty-hours"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleDialogClose}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={createMutation.isPending || updateMutation.isPending}
-                    data-testid="button-submit-faculty"
-                  >
-                    {(createMutation.isPending || updateMutation.isPending) && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    {editingFaculty ? "Update" : "Add"} Faculty
-                  </Button>
-                </div>
-              </form>
-            </Form>
+                      </TabsContent>
+                      
+                      <TabsContent value="rooms" className="space-y-4">
+                        <Controller
+                          control={form.control}
+                          name="preferences.roomPreferences"
+                          render={({ field, fieldState }) => (
+                            <RoomPreferenceSelector
+                              value={field.value || []}
+                              onChange={field.onChange}
+                              error={fieldState.error?.message}
+                            />
+                          )}
+                        />
+                      </TabsContent>
+                    </Tabs>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleDialogClose}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={createMutation.isPending || updateMutation.isPending}
+                      data-testid="button-submit-faculty"
+                    >
+                      {(createMutation.isPending || updateMutation.isPending) && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      {editingFaculty ? "Update" : "Add"} Faculty
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </ScrollArea>
           </DialogContent>
         </Dialog>
       </div>

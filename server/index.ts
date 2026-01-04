@@ -1,7 +1,10 @@
+import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { seedUsersFromCSV, createDefaultAdmin } from "./csvLoader";
+import { seedDataFromCSV } from "./dataLoader";
 
 const app = express();
 const httpServer = createServer(app);
@@ -60,6 +63,13 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Load users from CSV files on startup
+  await createDefaultAdmin();
+  await seedUsersFromCSV();
+  
+  // Load courses and rooms from CSV files
+  await seedDataFromCSV();
+  
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

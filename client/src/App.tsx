@@ -126,7 +126,7 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="system" storageKey="harmony-ui-theme">
+      <ThemeProvider defaultTheme="system" storageKey="academic-ui-theme">
         <TooltipProvider>
           <Toaster />
           <Router />

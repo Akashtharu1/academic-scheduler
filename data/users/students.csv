@@ -1,0 +1,9 @@
+username,email,name,department,default_password
+student006,frank.miller@university.edu,Frank Miller,ISE,student123
+student007,grace.taylor@university.edu,Grace Taylor,ISE,student123
+student008,henry.anderson@university.edu,Henry Anderson,ISE,student123
+student009,ivy.clark@university.edu,Ivy Clark,ISE,student123
+student010,jack.lewis@university.edu,Jack Lewis,ISE,student123
+student024,xavier.rivera@university.edu,Xavier Rivera,Computer Science,student123
+student025,yara.cooper@university.edu,Yara Cooper,ISE,student123
+student026,zack.reed@university.edu,Zack Reed,ISE,student123

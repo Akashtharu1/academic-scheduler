@@ -1,0 +1,11 @@
+code,name,department,semester,credits,lectureHours,labHours
+BCS501,Software Engineering & Project Management,ISE,5,3,3,0
+BCS502,Computer Networks,ISE,5,4,3,2
+BCS503,Theory of Computation,ISE,5,4,4,0
+BCSL504,Web Technology Lab,ISE,5,1,0,2
+BCS505X,Professional Elective Course,ISE,5,3,3,0
+BCS506,Mini Project,ISE,5,3,0,3
+BRMK507,Research Methodology & IPR,ISE,5,2,2,0
+BESK508,Environmental Studies,ISE,5,1,1,0
+BNSK509,Career Readiness Classes,ISE,5,0,2,0
+BCSL510,Computer Networks Lab,ISE,5,1,0,2
